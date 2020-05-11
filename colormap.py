@@ -43,84 +43,113 @@ import matplotlib.tri as tri
 import os
 import json
 import glob
+import warnings
 
-CM_DIRPATH = './colormaps'
+#CM_DIRPATH = './colormaps'
 
-class colormap:
+# TODO: create a second file with general functions, e.g. RGB to 0, 1 conversion.
+# TODO: tidy up all comments, create more were necessary
+
+class ColorMap:  # TODO: class names start always with an upper case, e.g. ColorMap
     """create a colormap object compatible with matplotlib
     TODO: implement alpha channel support in load and save method. Should colormap.objects be in place or a new object
         """
-    def __init__(self, arg):
+    def __init__(self, arg, name='default', cm_dirpath='./colormaps'):
+        # TODO: blank between parameter and :
+        # TODO: str or list or dict, optional
         """
         Constructor of colormap class.
 
         Parameters
         ----------
-        arg: str, dict, list
+        arg : str, dict, list
             defining the input for the colormap, can be one of the following: Name of a matplotlib colormap, list of RGB values, dict of rgb values, cpt filename, ct filename, json filename
+            # TODO: add clear examples how the input should or can look like
         """
         self.arg = arg
-        self.c_map_name = 'default'
+        self.dirpath = cm_dirpath
 
         #else:
             #self.c_map_name = userinput
 
+        # TODO: the first check must be a matplotlib colormap
+
         if self.arg in plt.colormaps():
-            self._object = cm.get_cmap(self.arg)
-            self.c_map_name = self.arg
+            self._object = cm.get_cmap(self.arg)  # TODO: better variable naming than object? _mpl_cm
+            #self.name = self.arg
 
         elif isinstance(self.arg, list):
-            self._object = col.ListedColormap(name='CMap', colors=self.arg)
+            self._object = col.ListedColormap(name=name, colors=self.arg)  # TODO: the name should be self.cm_name
 
         elif isinstance(self.arg, dict):
-            self._object = col.LinearSegmentedColormap(name='CMap', segmentdata=self.arg)
+            self._object = col.LinearSegmentedColormap(name=name, segmentdata=self.arg) # TODO: the name should be self.cm_name
 
-        elif '.' in self.arg:
-            self.c_map_name = os.path.splitext(arg)[0]
-            self.extension = os.path.splitext(arg)[1]
+        elif '.' in self.arg:  # TODO: use os.path.isfile or sth similar
+            name = os.path.splitext(arg)[0]
+            extension = os.path.splitext(arg)[1] # TODO: self.extension was never set before
 
-            if '.cpt' == self.extension:
-                self._object = col.LinearSegmentedColormap(name='CMap', segmentdata=self.__colormap_from_cptfile())
+            if '.cpt' == extension:
+
                 #self.c_map_name = self.userinput
 
-            elif '.ct' == self.extension:
+            elif '.ct' == extension:
                 self._object = col.LinearSegmentedColormap.from_list(name='CMap', segmentdata=self.__colormap_from_gdal())
                 #self.c_map_name = self.userinput
 
-            elif '.json' == self.extension:
+            elif '.json' == extension:
                 self._object = col.ListedColormap(name='CMAP', colors=self.__colormap_from_json())
 
         else:
+            # TODO: update error message
             # valid = c.colormaps + c.diverging_black
             txt = "name provided {0} is not recognised or file extension is not supported. ".format(self.arg)
             txt += "\n valid name can be found in colormap.colormap_names"
             txt += "\n supported file extensions are .cpt and .ct"
             raise ValueError(txt)
 
-    @staticmethod
-    def colormaps_path():
-        """
-        Returns
-        -------
-        current colormap directory
-        """
-        return CM_DIRPATH
+    # TODO: maybe add some properties? How many colours are in the colourmap etc., the name of the colourmap
 
-    @staticmethod
-    def get_user_colormaps():
-        """
-        Lists all colormaps in the colormap directory
+    @property
+    def name(self):
+        return self._mpl_cm.name
 
-        Returns
-        -------
-        list of all files in the colormap directory
-        """
-        user_colormaps = []
-        for root, dirs, files in os.walk(CM_DIRPATH):
-            user_colormaps.append(files)
-        return print(user_colormaps)
+    # TODO: delete
+    # @staticmethod
+    # def colormaps_path():
+    #     """
+    #     Returns
+    #     -------
+    #     current colormap directory
+    #     """
+    #     return CM_DIRPATH
 
-    def from_gradient(self, outname = None):
+    # TODO: delete
+    # @staticmethod
+    # def get_user_colormaps():
+    #     """
+    #     Lists all colormaps in the colormap directory
+    #
+    #     Returns
+    #     -------
+    #     list of all files in the colormap directory
+    #     """
+    #     user_colormaps = []
+    #     for root, dirs, files in os.walk(CM_DIRPATH):
+    #         user_colormaps.append(files)
+    #     return print(user_colormaps)
+
+    def __len__(self):
+        return 3
+
+    def __getitem__(self, item):
+        pass
+
+    def __str__(self):
+        pass
+
+    # TODO: In my opinion this should be a to_ ... method
+    # TODO: don't overwrite, use inplace or return new object
+    def gradient(self, name = None, inplace=True):
         """
         Converts a listed Colormap to a Linear Segmented Colormap
 
@@ -129,25 +158,37 @@ class colormap:
         outname: str, optional
             filename if the colormap is saved
         """
-        self._object = col.LinearSegmentedColormap.from_list(outname, self._object.colors)
-
-    #Same as from_gradient
-    def listed2segmented(self, outname = None):
-        """
-        Converts a listed Colormap to a Linear Segmented Colormap
-
-        Parameters
-        ----------
-        outname: str, optional
-            filename if the colormap is saved
-        """
-        if isinstance(self._object, col.ListedColormap):
-            self._object = col.LinearSegmentedColormap.from_list(outname, self._object.colors)
+        if "LinearSegmentedColormap" == self._mpl_cm:
+            warnings.warn("dasdfs")
+            return self
         else:
-            return None
 
+        mpl_cm = col.LinearSegmentedColormap.from_list(name, self._mpl_cm.colors)
+        if inplace:
+            self._mpl_cm = mpl_cm
+            return self
+        else:
+            return ColorMap(mpl_cm)
 
-    def save(self, outname = None, **kwargs):
+    # TODO: why two times?
+    # TODO: don't overwrite, use inplace or return new object
+    #Same as from_gradient
+    # def listed2segmented(self, outname = None):
+    #     """
+    #     Converts a listed Colormap to a Linear Segmented Colormap
+    #
+    #     Parameters
+    #     ----------
+    #     outname: str, optional
+    #         filename if the colormap is saved
+    #     """
+    #     if isinstance(self._object, col.ListedColormap):
+    #         self._object = col.LinearSegmentedColormap.from_list(outname, self._object.colors)
+    #     else:
+    #         return None
+
+    # TODO: out_filepath mandatory; or out_path and check for file or directory path whats with save_as_json etc?
+    def save_as_cpt(self, outname=None, **kwargs):
         """
         Saves a acolormap.object as a .cpt file
 
@@ -160,7 +201,7 @@ class colormap:
 
         """
         if outname is None:
-            outname = self.c_map_name+'.cpt'
+            outname = self.name+'.cpt'
         elif '.cpt' not in outname:
             outname = outname+'.cpt'
         vmin=0
@@ -188,8 +229,9 @@ class colormap:
                    header="# COLOR_MODEL = RGB",
                    footer=ex, comments="")
 
-
-    def convert2greyscale(self, weights = 1):
+    # TODO: don't overwrite, use inplace or return new object
+    # TODO: more detailed documentation
+    def convert2greyscale(self, weights = 1, inplace=True):
         """
         Return a grayscale version of the given colormap
 
@@ -223,7 +265,7 @@ class colormap:
         """
         return self._object
 
-    #TODO: Segmented Colormap returns no dict
+    #TODO: Segmented Colormap returns no dict (if you cannot find a solution for this, add it to the nodes as a warning)
     def to_dict(self):
         """
         Creates a dictionary of colors from a colormap object
@@ -291,7 +333,7 @@ class colormap:
                 temp = [key, value]
                 dic_list.append(temp)
 
-    def view(self):
+    def plot(self):
         """
         Shows the colormap as a colorbar in a plot
         """
@@ -306,7 +348,8 @@ class colormap:
         plt.axis('off')
         plt.show()
 
-    def reverse(self):
+    # TODO: don't overwrite, use inplace or return new object
+    def reverse(self, inplace=True):
         """
         Reverses a colormap, a.k.a returns the containing colors in reverse direction
         """
@@ -331,6 +374,12 @@ class colormap:
             self._object = mpl.colors.LinearSegmentedColormap(self._object, revdict)
         return self._object
 
+    @classmethod
+    def from_cptfile(cls, filepath):
+        cptdict = cptfile2dict(filepath)
+        return cls.from_dict(cptdict)
+
+    # TODO: this function is general file -> dict; move them somewhere else and implement them as a classmethod. cptfile2dict
     #add if line is empty continue
     def __colormap_from_cptfile(self):
         """
@@ -411,6 +460,7 @@ class colormap:
         colordict = {"red": red, "green": green, "blue": blue}
         return colordict
 
+    # TODO: this function is general file -> dict; move them somewhere else and implement them as a classmethod.
     def __colormap_from_gdal(self):
         """
         Creates a color list for a colormap object from a gdal .ct file
@@ -454,7 +504,8 @@ class colormap:
             col_list.append((r[i], g[i], b[i]))
         return col_list
 
-    #TODO check if all json files look the same? Alpha channel? Listed or segmented, keywords?
+    # TODO: this function is general file -> dict; move them somewhere else.
+    #TODO check if all json files look the same? Alpha channel? Listed or segmented, keywords and implement them as a classmethod?
     def __colormap_from_json(self):
         """
         Creates a color list for a colormap object from a json file, or None if the file was invalid
@@ -483,7 +534,8 @@ class colormap:
 
         return col_list
 
-    #Delete
+    # TODO: what do the following functions?
+    # TODO: Delete
     def change(self, function):
         """ Applies function (which should operate on vectors of shape 3: [r, g, b]), on colormap cmap.
         This routine will break any discontinuous points in a colormap.
@@ -518,7 +570,8 @@ class colormap:
             return col.LinearSegmentedColormap('CMap', cdict, 1024)
         else:
             return None
-    #Delete
+
+    # TODO: Delete
     def cmap_xmap(self, function):
         """ Applies function, on the indices of colormap cmap. Beware, function
         should map the [0, 1] segment to itself, or you are in for surprises.

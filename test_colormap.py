@@ -27,21 +27,28 @@ import matplotlib.cm as cm
 from colormap import colormap
 import matplotlib.colors as col
 
+# TODO: use random numbers
 class TestColomap(unittest.TestCase):
+
+    def __init__(self, filepath):
+        self.filepath
+        super().__init()
 
     @classmethod
     def setUpClass(cls):
         """ Creates Colormap test data. """
+        cls(testpath)
 
     def setUp(self):
         """ Retrieves test data filepaths and auxiliary data. """
 
-    def cmap_from_name(self):
+    def test_cmap_from_name(self):  #TODO: add test in front of
         """
         Tests creation of a colormap from name
         """
         cmap = colormap('Viridis')
         self.assertIsInstance(cmap, colormap)
+
 
     def cmap_from_dict(self):
         cdict = {'red': ((0., 1, 1),
