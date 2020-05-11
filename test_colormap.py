@@ -27,6 +27,7 @@ import matplotlib.cm as cm
 from colormap import colormap
 import matplotlib.colors as col
 
+# TODO: use random numbers
 class TestColomap(unittest.TestCase):
 
     @classmethod
