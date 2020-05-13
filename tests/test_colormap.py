@@ -1,5 +1,4 @@
-# Copyright (c) 2020,Vienna University of Technology,
-# Department of Geodesy and Geoinformation
+# Copyright (c) 2020, TU Wien, Department of Geodesy and Geoinformation
 # All rights reserved.
 
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -16,39 +15,30 @@
 
 
 """
-Tests for the Colormap().
+Tests for the colormap.
 """
 
-import numpy as np
 import unittest
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
-import matplotlib.cm as cm
-from colormap import colormap
-import matplotlib.colors as col
 
-# TODO: use random numbers
+from colorella.colormap import ColorMap
+
+
 class TestColomap(unittest.TestCase):
 
     def __init__(self, filepath):
         self.filepath
         super().__init()
 
-    @classmethod
-    def setUpClass(cls):
-        """ Creates Colormap test data. """
-        cls(testpath)
-
     def setUp(self):
         """ Retrieves test data filepaths and auxiliary data. """
+        pass
 
-    def test_cmap_from_name(self):  #TODO: add test in front of
+    def test_cmap_from_name(self):
         """
         Tests creation of a colormap from name
         """
-        cmap = colormap('Viridis')
-        self.assertIsInstance(cmap, colormap)
-
+        cmap = ColorMap('Viridis')
+        self.assertIsInstance(cmap, ColorMap)
 
     def cmap_from_dict(self):
         cdict = {'red': ((0., 1, 1),
@@ -76,23 +66,20 @@ class TestColomap(unittest.TestCase):
                            (0.34, 1, 1),
                            (0.65, 0, 0),
                            (1, 0, 0))}
-        cmap = colormap(cdict)
-        self.assertIsInstance(cmap, colormap)
+        cmap = ColorMap(cdict)
+        self.assertIsInstance(cmap, ColorMap)
 
     def cmap_from_list(self):
-        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0), (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
-        cmap = colormap(clist)
-        self.assertIsInstance(cmap, colormap)
+        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0),
+                 (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
+        cmap = ColorMap(clist)
+        self.assertIsInstance(cmap, ColorMap)
 
     def cmap_from_gdal(self):
-        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0), (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
-        cmap = colormap(clist)
-        self.assertIsInstance(cmap, colormap)
-
-    def cmap_from_cpt(self):
-
-
-        self.assertIsInstance(cmap, colormap)
+        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0),
+                 (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
+        cmap = ColorMap(clist)
+        self.assertIsInstance(cmap, ColorMap)
 
 
 if __name__ == '__main__':
