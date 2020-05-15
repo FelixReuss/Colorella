@@ -18,82 +18,125 @@
 """
 Tests for the Colormap().
 """
-
-import numpy as np
 import unittest
+import random
 import matplotlib.pyplot as plt
-import matplotlib.tri as tri
-import matplotlib.cm as cm
+import gdal
 from colormap import colormap
 import matplotlib.colors as col
 
-# TODO: use random numbers
 class TestColomap(unittest.TestCase):
-
-    def __init__(self, filepath):
-        self.filepath
-        super().__init()
-
-    @classmethod
-    def setUpClass(cls):
-        """ Creates Colormap test data. """
-        cls(testpath)
 
     def setUp(self):
         """ Retrieves test data filepaths and auxiliary data. """
+        cm_list = plt.colormaps()
+        self.default_cm = random.choice(cm_list)
+        red = [(0., 1, 1), (1, 0, 0)]
+        green = [(0., 1, 1), (1, 0, 0)]
+        blue = [(0., 1, 1), (1, 0, 0)]
+        alpha = [(0., 1, 1), (1, 0, 0)]
+        for i in range(4):
+            red.append((random.uniform(0, 1), random.randint(0, 1), random.randint(0, 1)))
+            green.append((random.uniform(0, 1), random.randint(0, 1), random.randint(0, 1)))
+            blue.append((random.uniform(0, 1), random.randint(0, 1), random.randint(0, 1)))
+            alpha.append((random.uniform(0, 1), random.randint(0, 1), random.randint(0, 1)))
+        red.sort(key=lambda x: x[0])
+        green.sort(key=lambda x: x[0])
+        blue.sort(key=lambda x: x[0])
+        alpha.sort(key=lambda x: x[0])
+        self.cdict = {'red':tuple(red), 'green': tuple(green), 'blue': tuple(blue), 'alpha': tuple(alpha)}
+        self.clist = []
+        for i in range(random.randint(1, 20)):
+            self.clist.append((random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)))
 
-    def test_cmap_from_name(self):  #TODO: add test in front of
+    def test_cmap_from_name(self):
         """
         Tests creation of a colormap from name
         """
-        cmap = colormap('Viridis')
+        cmap = colormap(self.default_cm)
         self.assertIsInstance(cmap, colormap)
 
-
-    def cmap_from_dict(self):
-        cdict = {'red': ((0., 1, 1),
-                         (0.05, 1, 1),
-                         (0.11, 0, 0),
-                         (0.66, 1, 1),
-                         (0.89, 1, 1),
-                         (1, 0.5, 0.5)),
-                 'green': ((0., 1, 1),
-                           (0.05, 1, 1),
-                           (0.11, 0, 0),
-                           (0.375, 1, 1),
-                           (0.64, 1, 1),
-                           (0.91, 0, 0),
-                           (1, 0, 0)),
-                 'blue': ((0., 1, 1),
-                          (0.05, 1, 1),
-                          (0.11, 1, 1),
-                          (0.34, 1, 1),
-                          (0.65, 0, 0),
-                          (1, 0, 0)),
-                 'alpha': ((0., 1, 1),
-                           (0.05, 1, 1),
-                           (0.11, 1, 1),
-                           (0.34, 1, 1),
-                           (0.65, 0, 0),
-                           (1, 0, 0))}
-        cmap = colormap(cdict)
+    def test_cmap_from_dict(self):
+        cmap = colormap(self.cdict)
         self.assertIsInstance(cmap, colormap)
 
-    def cmap_from_list(self):
-        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0), (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
-        cmap = colormap(clist)
+    def test_cmap_from_list(self):
+        cmap = colormap(self.clist)
         self.assertIsInstance(cmap, colormap)
 
-    def cmap_from_gdal(self):
-        clist = [(0., 1, 1), (0.05, 1, 1), (0.11, 0, 0), (0.66, 1, 1), (0.89, 1, 1), (1, 0.5, 0.5)]
-        cmap = colormap(clist)
+    def test_cmap_from_gdal(self):
+        path_ct_file = r'\test_data\sgrt_ct_cont_ssm.ct.cpt'
+        cmap = colormap(path_ct_file)
         self.assertIsInstance(cmap, colormap)
 
-    def cmap_from_cpt(self):
-
-
+    def test_cmap_from_cpt(self):
+        path_cpt_file = r'\test_data\ETOPO1.cpt'
+        cmap = colormap(path_cpt_file)
         self.assertIsInstance(cmap, colormap)
 
+    def test_cmap_from_json(self):
+        path_json_file = r'\test_data\Rainbow.json'
+        cmap = colormap(path_json_file)
+        self.assertIsInstance(cmap, colormap)
+
+    def test_listed2segmented(self):
+        cmap = colormap(self.clist)
+        cmap = cmap.listed2segmented()
+        self.assertIsInstance(cmap, col.LinearSegmentedColormap)
+
+    def test_save(self):
+        cmap_write = colormap(self.clist)
+        outpath = r'\test_data\test_save.cpt'
+        cmap_write.save(outpath)
+        cmap_read = colormap(outpath)
+        self.assertEqual(cmap_read, cmap_write)
+
+    def test_convert2greyscale(self):
+        cmap = colormap(self.default_cm)
+        cmap_grey = cmap.convert2greyscale()
+        cmap_grey.view()
+        self.assertIsInstance(cmap_grey, col.LinearSegmentedColormap)
+
+    def test_to_matplotlib(self):
+        cmap = colormap(self.default_cm)
+        self.assertIsInstance(cmap, col.LinearSegmentedColormap)
+
+    def test_to_dict(self):
+        cmap = colormap(self.cdict)
+        cdict_out = cmap.to_dict()
+        self.assertEqual(self.cdict, cdict_out)
+
+    def test_to_list(self):
+        cmap = colormap(self.clist)
+        clist_out = cmap.to_list()
+        self.assertListEqual(self.clist, clist_out)
+
+    def test_reverse(self):
+        if isinstance(self._mpl_cm, col.ListedColormap):
+            colors_reverse = self._mpl_cm.colors[::-1]
+        elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
+            colors_reverse = []
+            keys = []
+
+            for key in self._mpl_cm._segmentdata:
+                keys.append(key)
+                channel = self._mpl_cm._segmentdata[key]
+                data = []
+
+                for c in channel:
+                    data.append((1 - c[0], c[2], c[1]))
+                colors_reverse.append(sorted(data))
+
+        self.assertEqual(self.cdict, colors_reverse)
+
+    def test_view(self):
+        cmap = colormap(self.default_cm)
+        cmap.view()
+
+    def test_to_gdal(self):
+        cmap = colormap(self.default_cm)
+        g_ct = cmap.to_gdal()
+        self.assertIsInstance(g_ct, gdal.ColorTable)
 
 if __name__ == '__main__':
     unittest.main()
