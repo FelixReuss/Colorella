@@ -49,7 +49,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
     TODO: implement alpha channel support in load and save method. Should colormap.objects be in place or a new object
         """
 
-    def __init__(self, arg, name='default', cm_dirpath='./colormaps'):
+    def __init__(self, arg, cm_dirpath='./colormaps'):
         # TODO: blank between parameter and :
         # TODO: str or list or dict, optional
         """
@@ -63,48 +63,14 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         """
         self.arg = arg
         self.dirpath = cm_dirpath
-        self._name = name
 
         if isinstance(self.arg, col.LinearSegmentedColormap) or isinstance(self.arg, col.ListedColormap):
             self._mpl_cm = self.arg
-
+        elif isinstance(self.arg, str) and self.arg in plt.colormaps():
+            self._mpl_cm = cm.get_cmap(self.arg)
         elif isinstance(self.arg, str):
-            for files in os.walk(self.dirpath):
-                for file in files:
-                    if self.arg in files:
-                        self.c_map_name = os.path.splitext(file)[0]
-                        self.extension = os.path.splitext(file)[1]
-
-                        if '.cpt' == self.extension:
-                            ColorMap.from_cptfile(os.path.join(self.dirpath, file))
-
-                        elif '.ct' == self.extension:
-                            ColorMap.from_gdal(os.path.join(self.dirpath, file))
-
-                        elif '.json' == self.extension:
-                            ColorMap.from_json(os.path.join(self.dirpath, file))
-                    else:
-                        continue
-
-        elif self.arg in plt.colormaps():
-            self._mpl_cm = cm.get_cmap(self.arg)
-
-        elif isinstance(self.arg, list):
-            self._mpl_cm = col.ListedColormap(name=self._name, colors=self.arg)  # TODO: the name should be self.cm_name
-
-        elif isinstance(self.arg, dict):
-            self._mpl_cm = col.LinearSegmentedColormap(name=self._name, segmentdata=self.arg) # TODO: the name should be self.cm_name
-
-        if self.arg in plt.colormaps():
-            self._mpl_cm = cm.get_cmap(self.arg)
-
-        elif isinstance(self.arg, list):
-            self._mpl_cm = col.ListedColormap(name=self._name, colors=self.arg)
-
-        elif isinstance(self.arg, dict):
-            self._mpl_cm = col.LinearSegmentedColormap(
-                name=self._name, segmentdata=self.arg)  # TODO: the name should be self.cm_name
-
+            colormap = ColorMap.from_cm_directory(self.dirpath)
+            self._mpl_cm = cm._mpl_cm
         else:
             # TODO: update error message
             # valid = c.colormaps + c.diverging_black
@@ -119,7 +85,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         """
         Returns attribute name
         """
-        return self._name
+        return self._mpl_cm.name
 
     def __len__(self):
         """
@@ -361,16 +327,48 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
                 gdal_ct.SetColorEntry(i, tuple(int(self._mpl_cm._segmentdata.get('red')[i]), int(self._mpl_cm._segmentdata.get('green')[i]), int(self._mpl_cm._segmentdata.get('blue')[i], int(self._mpl_cm._segmentdata.get('alpha')[i])))
         return gdal_ct
 
+    @classmethod
+    def from_cm_directory(cls, cm_name, dirpath):
+        for filepath in glob.glob(dirpath):
+            if cm_name in filepath:
+                return cls.from_file(filepath)
+
+    @classmethod
+    def from_file(cls, filepath, name=None):
+
+        mpl_cm = None
+        extension = os.path.splitext(filepath)[1]
+        if '.cpt' == extension:
+
+        elif '.ct' == extension:
+            _, gdaldict = gdal2dict(filepath)
+            mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=gdaldict)
+        elif '.json' == extension:
+            return cls.from_json(filepath)
+        else:
+            raise Exception('')
+
+    @classmethod
+    def from_dict(cls, cdict, name='default'):
+        mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cdict)
+        return cls(mpl_cm)
+
+    @classmethod
+    def from_list(cls, clist, name='default'):
+        mpl_cm = col.ListedColormap(name=name, colors=clist)
+        return cls(mpl_cm)
 
     @classmethod
     def from_cptfile(cls, filepath):
         name, cptdict = cptfile2dict(filepath)
-        return col.LinearSegmentedColormap(name=name, segmentdata=cptdict)
+        return cls.from_dict(cptdict, name=name)
 
+    @classmethod
     def from_gdal(cls, filepath):
         name, gdaldict = gdal2dict(filepath)
-        return col.LinearSegmentedColormap(name=name, segmentdata=gdaldict)
+        return cls.from_dict(gdaldict, name=name)
 
+    @classmethod
     def from_json(cls, filepath):
         name, jsonlist = json2list(filepath)
-        return col.ListedColormap(name=name, colors=jsonlist)
+        return cls.from_list(jsonlist, name=name)

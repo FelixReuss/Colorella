@@ -29,18 +29,20 @@ from src.colorella.utils import cptfile2dict, gdal2dict, json2list
 import matplotlib.colors as col
 
 
-class TestColomap(unittest.TestCase):
+class TestColormap(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.test_path = r'test_data'
-        cls.test_output = r'test_output'
-        os.chdir(cls.test_path)
-        if not os.path.exists(cls.test_output):
-            os.makedirs(cls.test_output)
+        test_path = r'test_data'
+        test_output = r'test_output'
+        os.chdir(test_path)
+        if not os.path.exists(test_output):
+            os.makedirs(test_output)
 
     def setUp(self):
         """ Create random test data and set up path """
+        self.test_path = r'test_data'
+        self.test_output = r'test_output'
         cm_list = plt.colormaps()
         self.default_cm = random.choice(cm_list)
 
