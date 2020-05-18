@@ -32,25 +32,23 @@ classmethods allow the following functions:
 - adapt a colormao using a function?
 - adapt the indices of a colormap
 '''''
-
+import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as col
-import colorsys
-import matplotlib.tri as tri
-import os
-import json
-import glob
+from osgeo import gdal
 import warnings
 
-from colorella.utils import cptfile2dict, gdal2dict, json2list
+from src.colorella.utils import cptfile2dict, gdal2dict, json2list
+
 
 class ColorMap:  # TODO: class names start always with an upper case, e.g. ColorMap
     """create a colormap object compatible with matplotlib
     TODO: implement alpha channel support in load and save method. Should colormap.objects be in place or a new object
         """
+
     def __init__(self, arg, name='default', cm_dirpath='./colormaps'):
         # TODO: blank between parameter and :
         # TODO: str or list or dict, optional
@@ -65,10 +63,9 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         """
         self.arg = arg
         self.dirpath = cm_dirpath
-        self._mpl_cm.name = name
+        self._name = name
 
-        # TODO: the first check must be a matplotlib colormap
-        if isinstance(self.arg, matplotlib.colors.LinearSegmentedColormap) or isinstance(self.arg, matplotlib.colors.ListedColormap):
+        if isinstance(self.arg, col.LinearSegmentedColormap) or isinstance(self.arg, col.ListedColormap):
             self._mpl_cm = self.arg
 
         elif isinstance(self.arg, str):
@@ -90,18 +87,29 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
                         continue
 
         elif self.arg in plt.colormaps():
-            self._mpl_cm = cm.get_cmap(self.arg)  # TODO: better variable naming than object? _mpl_cm
+            self._mpl_cm = cm.get_cmap(self.arg)
 
         elif isinstance(self.arg, list):
-            self._mpl_cm = col.ListedColormap(name=self._mpl_cm.name, colors=self.arg)  # TODO: the name should be self.cm_name
+            self._mpl_cm = col.ListedColormap(name=self._name, colors=self.arg)  # TODO: the name should be self.cm_name
 
         elif isinstance(self.arg, dict):
-            self._mpl_cm = col.LinearSegmentedColormap(name=self._mpl_cm.name, segmentdata=self.arg) # TODO: the name should be self.cm_name
+            self._mpl_cm = col.LinearSegmentedColormap(name=self._name, segmentdata=self.arg) # TODO: the name should be self.cm_name
+
+        if self.arg in plt.colormaps():
+            self._mpl_cm = cm.get_cmap(self.arg)
+
+        elif isinstance(self.arg, list):
+            self._mpl_cm = col.ListedColormap(name=self._name, colors=self.arg)
+
+        elif isinstance(self.arg, dict):
+            self._mpl_cm = col.LinearSegmentedColormap(
+                name=self._name, segmentdata=self.arg)  # TODO: the name should be self.cm_name
 
         else:
             # TODO: update error message
             # valid = c.colormaps + c.diverging_black
-            txt = "name provided {0} is not recognised or file extension is not supported. ".format(self.arg)
+            txt = "Input provided {0} is not recognised or file extension is not supported. ".format(
+                self.arg)
             txt += "\n valid name can be found in colormap.colormap_names"
             txt += "\n supported file extensions are .cpt and .ct"
             raise ValueError(txt)
@@ -111,7 +119,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         """
         Returns attribute name
         """
-        return self._mpl_cm.name
+        return self._name
 
     def __len__(self):
         """
@@ -120,7 +128,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         - for Listed Colormap: total number of colors
         """
         if isinstance(self._mpl_cm, col.LinearSegmentedColormap):
-            return len(cmap._object._segmentdata.get('red'))
+            return len(self._mpl_cm._segmentdata.get('red'))
         elif isinstance(self._mpl_cm, col.ListedColormap):
             return self._mpl_cm.N
 
@@ -129,9 +137,9 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         Returns the xth color of the colormap
         """
         if isinstance(self._mpl_cm, col.LinearSegmentedColormap):
-            return {'red':cmap_object._segmentdata.get('red')[item], 'green':cmap_object._segmentdata.get('green')[item], 'blue': cmap_object._segmentdata.get('blue')[item], 'alpha': cmap_object._segmentdata.get('alpha')[item]}
+            return {'red':self._mpl_cm._segmentdata.get('red')[item], 'green':self._mpl_cm._segmentdata.get('green')[item], 'blue': self._mpl_cm._segmentdata.get('blue')[item], 'alpha': self._mpl_cm._segmentdata.get('alpha')[item]}
         elif isinstance(self._mpl_cm, col.ListedColormap):
-            return cmap_object.colors[item]
+            return self._mpl_cm.colors[item]
 
     def __str__(self):
         """
@@ -140,9 +148,10 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         - for a Listed Colormap: all colors
         """
         if isinstance(self._mpl_cm, col.LinearSegmentedColormap):
-            return str(cmap_object._segmentdata.values())
+            return str(self._mpl_cm._segmentdata.values())
         elif isinstance(self._mpl_cm, col.ListedColormap):
-            return str(cmap_object.colors[0]+cmap_object.colors[-1])
+            return str(self._mpl_cm.colors[0]+self._mpl_cm.colors[-1])
+
 
     #TODO name automatically set, or by user?
     def to_gradient(self, name = None, inplace=True):
@@ -157,8 +166,10 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         if isinstance(self._mpl_cm, col.LinearSegmentedColormap):
             warnings.warn("Colormap is already a Segmented Colormap. Listed Colormap required")
             return self._mpl_cm
+
         else:
             mpl_cm = col.LinearSegmentedColormap.from_list(name, self._mpl_cm.colors)
+
 
         if inplace:
             self._mpl_cm = mpl_cm
@@ -184,6 +195,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
             outname = self.dirpath+self.name+'.cpt'
         elif '.cpt' not in outname:
             outname = outname+'.cpt'
+
         vmin=0
         vmax=1
         N=255
@@ -192,7 +204,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         f = np.array(kwargs.get("F", self._mpl_cm(1.)))
         na = np.array(kwargs.get("N", (0, 0, 0))).astype(float)
         ext = (np.c_[b[:3], f[:3], na[:3]].T * 255).astype(int)
-        #Creating footer
+        # Creating footer
         extstr = "B {:3d} {:3d} {:3d}\nF {:3d} {:3d} {:3d}\nN {:3d} {:3d} {:3d}"
         ex = extstr.format(*list(ext.flatten()))
         # create colormap
@@ -209,7 +221,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
                    footer=ex, comments="")
 
     # TODO: more detailed documentation
-    def convert2greyscale(self, weights = 1, inplace=True):
+    def convert2greyscale(self, weights=1, inplace=True):
         """
         Return a grayscale version of the given colormap. Luminanance values are calculated using a dot  product of a weight array and the color array of the object
 
@@ -235,13 +247,14 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
             warnings.warn('Argument weight only supports values between 1 and 3')
 
         colors[:, :3] = luminance[:, np.newaxis]
-        mpl_cm = col.LinearSegmentedColormap.from_list(self.c_map_name + "_grey", colors, self._mpl_cm.N)
+        mpl_cm = col.LinearSegmentedColormap.from_list(self._name + "_grey", colors, self._mpl_cm.N)
 
         if inplace:
             self._mpl_cm = mpl_cm
             return self
         else:
             return ColorMap(mpl_cm, name=self._mpl_cm.name+'_grey')
+
 
     def to_matplotlib(self):
         """
@@ -296,7 +309,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
                 dic_list.append(temp)
             return  dic_list
 
-    def plot(self):
+    def view(self):
         """
         Shows the colormap as a colorbar in a plot
         """
@@ -334,7 +347,6 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
             return self._mpl_cm
         else:
             return ColorMap(mpl_cm, name=self._mpl_cm.name + '_reversed')
-
 
     def to_gdal(self):
         """

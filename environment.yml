@@ -1,0 +1,7 @@
+name: colorella_env
+channels:
+  - default
+dependencies:
+  - numpy
+  - matplotlib
+  - pip
