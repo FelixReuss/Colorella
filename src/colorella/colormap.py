@@ -42,7 +42,7 @@ import matplotlib.colors as col
 from osgeo import gdal
 import warnings
 
-from src.colorella.utils import cptfile2dict, gdal2dict, json2list
+from src.colorella.utils import cptfile2dict, ctfile2dict, json2list
 
 
 class ColorMap:
@@ -153,7 +153,9 @@ class ColorMap:
 
         """
         if outname is None:
-            outname = self.dirpath+self.name+'.cpt'
+            os.path.join(self.dirpath, self._mpl_cm.name+'.ct')
+        elif os.path.isdir(outname):
+            outname = os.path.join(outname, self._mpl_cm.name+'.cpt')
         elif '.cpt' not in outname:
             outname = outname+'.cpt'
 
@@ -175,8 +177,6 @@ class ColorMap:
 
         fmt = "%e %3d %3d %3d %e %3d %3d %3d"
 
-        if not os.path.exists(outname):
-            os.makedirs(outname)
         np.savetxt(outname, col_arr, fmt=fmt,
                    header="# COLOR_MODEL = RGB",
                    footer=footer, comments="")
@@ -191,11 +191,13 @@ class ColorMap:
             outname for the file
         """
         if outname is None:
-            outname = self.dirpath+self.name+'.ct'
+            outname = os.path.join(self.dirpath, self._mpl_cm.name+'.ct')
+        elif os.path.isdir(outname):
+            outname = os.path.join(outname, self._mpl_cm.name+'.ct')
         elif '.ct' not in outname:
             outname = outname+'.ct'
 
-        arr = np.zeros((255, 3))
+        arr = np.zeros((255, 3), dtype=int)
 
         if isinstance(self._mpl_cm, col.ListedColormap):
             for i in range(len(self._mpl_cm.colors)):
@@ -204,11 +206,10 @@ class ColorMap:
         elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
             colors = (self._mpl_cm(np.linspace(0., 1., 255))[:, :3] * 255).astype(int)
             for i in range(len(colors)):
-                arr[i, :] = [colors[i][0], colors[i][1], colors[i][2]]
+                arr[i, :] = [int(colors[i][0]), int(colors[i][1]), int(colors[i][2])]
 
-        if not os.path.exists(outname):
-            os.makedirs(outname)
-        np.savetxt(outname, arr)
+        fmt = "%3d %3d %3d"
+        np.savetxt(outname, arr, fmt=fmt)
 
     def convert2greyscale(self, weights=1, inplace=True):
         """
@@ -398,7 +399,7 @@ class ColorMap:
             _, cptdict = cptfile2dict(filepath)
             mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cptdict)
         elif '.ct' == extension:
-            _, gdaldict = gdal2dict(filepath)
+            _, gdaldict = ctfile2dict(filepath)
             mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=gdaldict)
         elif '.json' == extension:
             _, jsonlist = json2list(filepath)
@@ -473,9 +474,9 @@ class ColorMap:
         return cls.from_dict(cptdict, name=name)
 
     @classmethod
-    def from_gdal(cls, filepath):
-        name, gdaldict = gdal2dict(filepath)
-        return cls.from_dict(gdaldict, name=name)
+    def from_ctfile(cls, filepath):
+        name, gdallist = ctfile2dict(filepath)
+        return cls.from_list(gdallist, name=name, gradient=True)
 
     @classmethod
     def from_json(cls, filepath):
