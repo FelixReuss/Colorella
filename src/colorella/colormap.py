@@ -33,6 +33,7 @@ classmethods allow the following functions:
 - adapt the indices of a colormap
 '''''
 import os
+import glob
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -44,14 +45,11 @@ import warnings
 from src.colorella.utils import cptfile2dict, gdal2dict, json2list
 
 
-class ColorMap:  # TODO: class names start always with an upper case, e.g. ColorMap
+class ColorMap:
     """create a colormap object compatible with matplotlib
-    TODO: implement alpha channel support in load and save method. Should colormap.objects be in place or a new object
         """
 
-    def __init__(self, arg, cm_dirpath='./colormaps'):
-        # TODO: blank between parameter and :
-        # TODO: str or list or dict, optional
+    def __init__(self, arg, cm_dirpath='./colormaps', name=None):
         """
         Constructor of colormap class.
 
@@ -59,25 +57,26 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         ----------
         arg : str, dict, list
             defining the input for the colormap, can be one of the following: Name of a matplotlib colormap, list of RGB values, dict of rgb values, cpt filename, ct filename, json filename
-            # TODO: add clear examples how the input should or can look like
         """
         self.arg = arg
         self.dirpath = cm_dirpath
 
         if isinstance(self.arg, col.LinearSegmentedColormap) or isinstance(self.arg, col.ListedColormap):
             self._mpl_cm = self.arg
+            if name:
+                self._mpl_cm.name = name
         elif isinstance(self.arg, str) and self.arg in plt.colormaps():
             self._mpl_cm = cm.get_cmap(self.arg)
+            if name:
+                self._mpl_cm.name = name
         elif isinstance(self.arg, str):
-            colormap = ColorMap.from_cm_directory(self.dirpath)
-            self._mpl_cm = cm._mpl_cm
+            self._mpl_cm = ColorMap.from_cm_directory(self.arg, self.dirpath)
+            if name:
+                self._mpl_cm.name = name
         else:
-            # TODO: update error message
-            # valid = c.colormaps + c.diverging_black
-            txt = "Input provided {0} is not recognised or file extension is not supported. ".format(
+            txt = "Input provided {0} is not recognised".format(
                 self.arg)
-            txt += "\n valid name can be found in colormap.colormap_names"
-            txt += "\n supported file extensions are .cpt and .ct"
+            txt += "\n Input String has to be either a Matplotlib Colormap Name or a file name in the default colormap directory"
             raise ValueError(txt)
 
     @property
@@ -118,8 +117,6 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         elif isinstance(self._mpl_cm, col.ListedColormap):
             return str(self._mpl_cm.colors[0]+self._mpl_cm.colors[-1])
 
-
-    #TODO name automatically set, or by user?
     def to_gradient(self, name = None, inplace=True):
         """
         Converts a listed Colormap to a Linear Segmented Colormap
@@ -143,8 +140,6 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         else:
             return ColorMap(mpl_cm, name=self._mpl_cm.name+'_gradient')
 
-
-    # TODO: out_filepath mandatory; or out_path and check for file or directory path whats with save_as_json etc?
     def save_as_cpt(self, outname=None, **kwargs):
         """
         Saves a acolormap.object as a .cpt file
@@ -172,21 +167,49 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         ext = (np.c_[b[:3], f[:3], na[:3]].T * 255).astype(int)
         # Creating footer
         extstr = "B {:3d} {:3d} {:3d}\nF {:3d} {:3d} {:3d}\nN {:3d} {:3d} {:3d}"
-        ex = extstr.format(*list(ext.flatten()))
+        footer = extstr.format(*list(ext.flatten()))
         # create colormap
         colors = (self._mpl_cm(np.linspace(0., 1., N))[:, :3] * 255).astype(int)
         vals = np.linspace(vmin, vmax, N)
-        arr = np.c_[vals[:-1], colors[:-1], vals[1:], colors[1:]]
+        col_arr = np.c_[vals[:-1], colors[:-1], vals[1:], colors[1:]]
 
         fmt = "%e %3d %3d %3d %e %3d %3d %3d"
 
         if not os.path.exists(outname):
             os.makedirs(outname)
-        np.savetxt(outname, arr, fmt=fmt,
+        np.savetxt(outname, col_arr, fmt=fmt,
                    header="# COLOR_MODEL = RGB",
-                   footer=ex, comments="")
+                   footer=footer, comments="")
 
-    # TODO: more detailed documentation
+    def save_as_ct(self, outname=None):
+        """
+        Saves a acolormap.object as a gdal .ct file
+
+        Parameters
+        ----------
+        outname: str, optional
+            outname for the file
+        """
+        if outname is None:
+            outname = self.dirpath+self.name+'.ct'
+        elif '.ct' not in outname:
+            outname = outname+'.ct'
+
+        arr = np.zeros((255, 3))
+
+        if isinstance(self._mpl_cm, col.ListedColormap):
+            for i in range(len(self._mpl_cm.colors)):
+                arr[i, :] = [int(self._mpl_cm.colors[i][0] * 255), int(self._mpl_cm.colors[i][1] * 255),
+                                          int(self._mpl_cm.colors[i][2] * 255)]
+        elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
+            colors = (self._mpl_cm(np.linspace(0., 1., 255))[:, :3] * 255).astype(int)
+            for i in range(len(colors)):
+                arr[i, :] = [colors[i][0], colors[i][1], colors[i][2]]
+
+        if not os.path.exists(outname):
+            os.makedirs(outname)
+        np.savetxt(outname, arr)
+
     def convert2greyscale(self, weights=1, inplace=True):
         """
         Return a grayscale version of the given colormap. Luminanance values are calculated using a dot  product of a weight array and the color array of the object
@@ -199,7 +222,6 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         """
         colors = self._mpl_cm(np.arange(self._mpl_cm.N))
 
-        # convert RGB to perceived grayscale luminance
         if weights == 1:
             RGB_weights = [0.2126, 0.7152, 0.0722]
             luminance = np.dot(colors[:, :3], RGB_weights)
@@ -213,7 +235,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
             warnings.warn('Argument weight only supports values between 1 and 3')
 
         colors[:, :3] = luminance[:, np.newaxis]
-        mpl_cm = col.LinearSegmentedColormap.from_list(self._name + "_grey", colors, self._mpl_cm.N)
+        mpl_cm = col.LinearSegmentedColormap.from_list(self._mpl_cm.name +'_grey', colors, self._mpl_cm.N)
 
         if inplace:
             self._mpl_cm = mpl_cm
@@ -264,9 +286,7 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         List object
         """
         if isinstance(self._mpl_cm, col.ListedColormap):
-            col_list = self._mpl_cm._lut
-            col_list_tuples = [tuple(l) for l in col_list]
-            return col_list_tuples
+            return self._mpl_cm.colors
 
         elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
             dic_list = []
@@ -321,42 +341,131 @@ class ColorMap:  # TODO: class names start always with an upper case, e.g. Color
         gdal_ct = gdal.ColorTable()
         if isinstance(self._mpl_cm, col.ListedColormap):
             for i in range(len(self._mpl_cm.colors)):
-                gdal_ct.SetColorEntry(i, tuple(int(self._mpl_cm.colors[i][0]*255), int(self._mpl_cm.colors[i][1]*255), int(self._mpl_cm.colors[i][2]*255), 255))
+                gdal_ct.SetColorEntry(i, (int(self._mpl_cm.colors[i][0]*255), int(self._mpl_cm.colors[i][1]*255), int(self._mpl_cm.colors[i][2]*255), 255))
         elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
-            for i in range(0, 256):
-                gdal_ct.SetColorEntry(i, tuple(int(self._mpl_cm._segmentdata.get('red')[i]), int(self._mpl_cm._segmentdata.get('green')[i]), int(self._mpl_cm._segmentdata.get('blue')[i], int(self._mpl_cm._segmentdata.get('alpha')[i])))
+            colors = (self._mpl_cm(np.linspace(0., 1., 255))[:, :3] * 255).astype(int)
+            for i in range(len(colors)):
+                gdal_ct.SetColorEntry(i,
+                                      (int(colors[i][0]), int(colors[i][1]),
+                                            int(colors[i][2]), 255))
         return gdal_ct
+
+    def from_gdal(self):
+        """
+        Converts a gdal Colortable to a matplotlib colormap
+        """
+        mpl_arr = [[self.GetColorEntry[x][0] / 255.0, self.GetColorEntry[x][1] / 255.0, self.GetColorEntry[x][0] / 255.0] for x in self.GetCount()]
+        mpl_cmap = ColorMap.from_list(mpl_arr)
+        return mpl_cmap
+
 
     @classmethod
     def from_cm_directory(cls, cm_name, dirpath):
+        """
+        Checks if given Input string matches with any file in the given directory. In case classmthod from_file is called
+
+        Parameters:
+        ----------
+        cm_name: str
+            name of the colormap file to be opened
+
+        Returns
+        ---------
+        colormap object
+        """
         for filepath in glob.glob(dirpath):
             if cm_name in filepath:
                 return cls.from_file(filepath)
 
     @classmethod
     def from_file(cls, filepath, name=None):
+        """
+        Function to open colormap objects from .cpt, .ct, .json files
+
+        Parameters:
+        ----------
+        filepath: str
+            path and filename of the colormap to be opened
+
+        Returns
+        ---------
+        colormap object
+        """
 
         mpl_cm = None
         extension = os.path.splitext(filepath)[1]
         if '.cpt' == extension:
-
+            _, cptdict = cptfile2dict(filepath)
+            mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cptdict)
         elif '.ct' == extension:
             _, gdaldict = gdal2dict(filepath)
             mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=gdaldict)
         elif '.json' == extension:
-            return cls.from_json(filepath)
+            _, jsonlist = json2list(filepath)
+            mpl_cm = col.ListedColormap(jsonlist, name=name)
         else:
             raise Exception('')
 
-    @classmethod
-    def from_dict(cls, cdict, name='default'):
-        mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cdict)
         return cls(mpl_cm)
 
     @classmethod
-    def from_list(cls, clist, name='default'):
-        mpl_cm = col.ListedColormap(name=name, colors=clist)
-        return cls(mpl_cm)
+    def from_dict(cls, cdict, name='default'):
+        """
+           from matplotlib:
+               Create color map from linear mapping segments
+
+               segmentdata argument is a dictionary with a red, green and blue
+               entries. Each entry should be a list of *x*, *y0*, *y1* tuples,
+               forming rows in a table. Entries for alpha are optional.
+
+               Example: suppose you want red to increase from 0 to 1 over
+               the bottom half, green to do the same over the middle half,
+               and blue over the top half.  Then you would use::
+
+                   cdict = {'red':   [(0.0,  0.0, 0.0),
+                                      (0.5,  1.0, 1.0),
+                                      (1.0,  1.0, 1.0)],
+
+                            'green': [(0.0,  0.0, 0.0),
+                                      (0.25, 0.0, 0.0),
+                                      (0.75, 1.0, 1.0),
+                                      (1.0,  1.0, 1.0)],
+
+                            'blue':  [(0.0,  0.0, 0.0),
+                                      (0.5,  0.0, 0.0),
+                                      (1.0,  1.0, 1.0)]}
+
+               Each row in the table for a given color is a sequence of
+               *x*, *y0*, *y1* tuples.  In each sequence, *x* must increase
+               monotonically from 0 to 1.  For any input value *z* falling
+               between *x[i]* and *x[i+1]*, the output value of a given color
+               will be linearly interpolated between *y1[i]* and *y0[i+1]*::
+
+                   row i:   x  y0  y1
+                                  /
+                                 /
+                   row i+1: x  y0  y1
+
+               Hence y0 in the first row and y1 in the last row are never used.
+           """
+        mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cdict)
+        return cls(mpl_cm, name=name)
+
+    @classmethod
+    def from_list(cls, clist, name='default', gradient=False):
+        """
+        Make a linear segmented colormap with *name* from a sequence
+        of *colors* which evenly transitions from colors[0] at val=0
+        to colors[-1] at val=1.  *N* is the number of rgb quantization
+        levels.
+        Alternatively, a list of (value, color) tuples can be given
+        to divide
+        """
+        if gradient==False:
+            mpl_cm = col.ListedColormap(name=name, colors=clist)
+        if gradient==True:
+            mpl_cm = col.LinearSegmentedColormap.from_list(name='default', colors=clist)
+        return cls(mpl_cm, name=name)
 
     @classmethod
     def from_cptfile(cls, filepath):

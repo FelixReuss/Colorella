@@ -31,18 +31,14 @@ import matplotlib.colors as col
 
 class TestColormap(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        test_path = r'test_data'
-        test_output = r'test_output'
-        os.chdir(test_path)
-        if not os.path.exists(test_output):
-            os.makedirs(test_output)
-
     def setUp(self):
         """ Create random test data and set up path """
-        self.test_path = r'test_data'
-        self.test_output = r'test_output'
+        self.data_path = os.path.join(os.path.dirname(__file__), "test_data")
+        #self.output_path = os.path.join(os.path.dirname(__file__), "test_output")
+        self.output_path = r'D:\Colormap'
+        if not os.path.exists(self.output_path):
+            os.makedirs(self.output_path)
+
         cm_list = plt.colormaps()
         self.default_cm = random.choice(cm_list)
 
@@ -64,13 +60,11 @@ class TestColormap(unittest.TestCase):
         self.clist = []
         for i in range(random.randint(1, 20)):
             self.clist.append((random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)))
-        print('Present DIR is : ', os.getcwd())
 
     def tearDown(self):
         """ Removes all test data. """
 
-        shutil.rmtree(self.test_output)
-        os.chdir(self.test_path)
+        shutil.rmtree(self.output_path)
 
     def test_cmap_from_name(self):
         """
@@ -83,22 +77,22 @@ class TestColormap(unittest.TestCase):
         """
         Tests creation of a ColorMap from a dictionary
         """
-        cmap = ColorMap(self.cdict)
+        cmap = ColorMap.from_dict(self.cdict)
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_list(self):
         """
         Tests creation of a ColorMap from a list
         """
-        cmap = ColorMap(self.clist)
+        cmap = ColorMap.from_list(self.clist)
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_gdal(self):
         """
         Tests creation of a ColorMap from a gdal ct file
         """
-        ct_file = 'sgrt_ct_cont_ssm.ct.cpt'
-        cmap = ColorMap().from_gdal(ct_file)
+        ct_file = 'sgrt_ct_cont_ssm.ct'
+        cmap = ColorMap.from_gdal(os.path.join(self.data_path, ct_file))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_cpt(self):
@@ -106,7 +100,7 @@ class TestColormap(unittest.TestCase):
         Tests creation of a ColorMap from a matplotlib ColorMap file
         """
         cpt_file = 'ETOPO1.cpt'
-        cmap = ColorMap().from_cptfile(cpt_file)
+        cmap = ColorMap.from_cptfile(os.path.join(self.data_path, cpt_file))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_json(self):
@@ -114,25 +108,34 @@ class TestColormap(unittest.TestCase):
         Tests creation of a ColorMap from a json file
         """
         json_file = 'Rainbow.json'
-        cmap = ColorMap().from_json(json_file)
+        cmap = ColorMap.from_json(os.path.join(self.data_path, json_file))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_listed2segmented(self):
         """
         Tests conversion from a Listed ColorMap to a LinearSegmented ColorMap
         """
-        cmap = ColorMap(self.clist)
+        cmap = ColorMap.from_list(self.clist)
         cmap = cmap.to_gradient()
-        self.assertIsInstance(cmap, col.LinearSegmentedColormap)
+        self.assertIsInstance(cmap._mpl_cm, col.LinearSegmentedColormap)
 
     def test_save(self):
         """
         Tests save ColorMap as cpt file
         """
-        cmap_write = ColorMap(self.clist)
-        cmap_write.save_as_cpt(self.test_output)
-        cmap_read = ColorMap(self.test_output)
-        self.assertEqual(cmap_read, cmap_write)
+        cmap = ColorMap(self.default_cm)
+        cmap.save_as_cpt(self.output_path)
+        cmap_read = ColorMap(self.output_path)
+        self.assertIsInstance(cmap_read, ColorMap)
+
+    def test_save_as_ct(self):
+        """
+        Tests save ColorMap as ct file
+        """
+        cmap = ColorMap(self.default_cm)
+        cmap.save_as_ct(self.output_path)
+        cmap_read = ColorMap(self.output_path)
+        self.assertEqual(cmap_read, ColorMap)
 
     def test_convert2greyscale(self):
         """
@@ -141,20 +144,20 @@ class TestColormap(unittest.TestCase):
         cmap = ColorMap(self.default_cm)
         cmap_grey = cmap.convert2greyscale()
         cmap_grey.view()
-        self.assertIsInstance(cmap_grey, col.LinearSegmentedColorMap)
+        self.assertIsInstance(cmap_grey._mpl_cm, col.LinearSegmentedColormap)
 
     def test_to_matplotlib(self):
         """
         Tests creation of a matplotlib ColorMap object
         """
         cmap = ColorMap(self.default_cm)
-        self.assertIsInstance(cmap, col.LinearSegmentedColorMap)
+        self.assertIsInstance(cmap._mpl_cm, col.LinearSegmentedColormap) or self.assertIsInstance(cmap._mpl_cm, col.ListedColormap)
 
     def test_to_dict(self):
         """
         Tests writing ColorMap colors to dictionary
         """
-        cmap = ColorMap(self.cdict)
+        cmap = ColorMap.from_dict(self.cdict)
         cdict_out = cmap.to_dict()
         self.assertEqual(self.cdict, cdict_out)
 
@@ -162,7 +165,7 @@ class TestColormap(unittest.TestCase):
         """
         Tests writing ColorMap colors to list
         """
-        cmap = ColorMap(self.clist)
+        cmap = ColorMap.from_list(self.clist)
         clist_out = cmap.to_list()
         self.assertListEqual(self.clist, clist_out)
 
@@ -171,20 +174,11 @@ class TestColormap(unittest.TestCase):
         Tests reversing ColorMap colors
 
         """
-        cmap = ColorMap(self.cdict)
-        colors_reverse = []
-        keys = []
+        cmap = ColorMap.from_list(self.clist)
+        cmap_reverse = cmap.reverse(inplace=False)
+        cmap = cmap_reverse.reverse(inplace=False)
 
-        for key in cmap._segmentdata:
-            keys.append(key)
-            channel = cmap._segmentdata[key]
-            data = []
-
-            for c in channel:
-                data.append((1 - c[0], c[2], c[1]))
-            colors_reverse.append(sorted(data))
-
-        self.assertEqual(self.cdict, colors_reverse)
+        self.assertEqual(cmap._mpl_cm.colors, self.clist)
 
     def test_view(self):
         """
