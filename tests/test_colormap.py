@@ -25,7 +25,7 @@ import random
 import matplotlib.pyplot as plt
 import gdal
 from src.colorella.colormap import ColorMap
-from src.colorella.utils import cptfile2dict, gdal2dict, json2list
+from src.colorella.utils import cptfile2dict, ctfile2dict, json2list
 import matplotlib.colors as col
 
 
@@ -87,12 +87,12 @@ class TestColormap(unittest.TestCase):
         cmap = ColorMap.from_list(self.clist)
         self.assertIsInstance(cmap, ColorMap)
 
-    def test_cmap_from_gdal(self):
+    def test_cmap_from_ctfile(self):
         """
         Tests creation of a ColorMap from a gdal ct file
         """
         ct_file = 'sgrt_ct_cont_ssm.ct'
-        cmap = ColorMap.from_gdal(os.path.join(self.data_path, ct_file))
+        cmap = ColorMap.from_ctfile(os.path.join(self.data_path, ct_file))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_cpt(self):
@@ -135,7 +135,7 @@ class TestColormap(unittest.TestCase):
         cmap = ColorMap(self.default_cm)
         cmap.save_as_ct(self.output_path)
         cmap_read = ColorMap(self.output_path)
-        self.assertEqual(cmap_read, ColorMap)
+        self.assertIsInstance(cmap_read, ColorMap)
 
     def test_convert2greyscale(self):
         """
@@ -150,8 +150,9 @@ class TestColormap(unittest.TestCase):
         """
         Tests creation of a matplotlib ColorMap object
         """
-        cmap = ColorMap(self.default_cm)
-        self.assertIsInstance(cmap._mpl_cm, col.LinearSegmentedColormap) or self.assertIsInstance(cmap._mpl_cm, col.ListedColormap)
+        cmap = ColorMap.from_list(self.clist)
+        cmap = cmap.to_matplotlib()
+        self.assertIsInstance(cmap._mpl_cm, col.ListedColormap)
 
     def test_to_dict(self):
         """
