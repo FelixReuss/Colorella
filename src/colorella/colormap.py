@@ -335,7 +335,7 @@ class ColorMap:
         else:
             return ColorMap(mpl_cm, name=self._mpl_cm.name + '_reversed')
 
-    def to_gdal(self):
+    def to_gdal(self, accelerate =1):
         """
         Converts a Colormap object to a gdal color table
         """
@@ -349,6 +349,27 @@ class ColorMap:
                 gdal_ct.SetColorEntry(i,
                                       (int(colors[i][0]), int(colors[i][1]),
                                             int(colors[i][2]), 255))
+        return gdal_ct
+
+    def to_gdal(self, accelerate =1):
+        """
+        Converts a Colormap object to a gdal color table
+        """
+        gdal_ct = gdal.ColorTable()
+        if isinstance(self._mpl_cm, col.ListedColormap):
+            mpl_ct = self._mpl_cm.colors
+
+            for i in range(0, 256, accelerate):
+                gdal_ct.SetColorEntry(int(i / accelerate), tuple(np.rint(np.multiply(mpl_ct[i], 256)).astype(np.byte)) + (0,))
+            for i in range(256 // accelerate, 256):
+                gdal_ct.SetColorEntry(i, tuple((255, 255, 255)) + (0,))
+        elif isinstance(self._mpl_cm, col.LinearSegmentedColormap):
+            mpl_ct = (self._mpl_cm(np.linspace(0., 1., 255))[:, :3] * 255).astype(int)
+            for i in range(0, 256, accelerate):
+                gdal_ct.SetColorEntry(int(i / accelerate),
+                                      tuple(np.rint(np.multiply(mpl_ct[i], 256)).astype(np.byte)) + (0,))
+            for i in range(256 // accelerate, 256):
+                gdal_ct.SetColorEntry(i, tuple((255, 255, 255)) + (0,))
         return gdal_ct
 
     def from_gdal(self):
@@ -396,13 +417,13 @@ class ColorMap:
         mpl_cm = None
         extension = os.path.splitext(filepath)[1]
         if '.cpt' == extension:
-            _, cptdict = cptfile2dict(filepath)
+            name, cptdict = cptfile2dict(filepath)
             mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cptdict)
         elif '.ct' == extension:
-            _, gdaldict = ctfile2dict(filepath)
-            mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=gdaldict)
+            name, gdallist = ctfile2dict(filepath)
+            mpl_cm = col.LinearSegmentedColormap.from_list(name=name, colors=gdallist)
         elif '.json' == extension:
-            _, jsonlist = json2list(filepath)
+            name, jsonlist = json2list(filepath)
             mpl_cm = col.ListedColormap(jsonlist, name=name)
         else:
             raise Exception('')

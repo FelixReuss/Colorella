@@ -82,13 +82,13 @@ def cptfile2dict(filepath):
     colordict = {"red": red, "green": green, "blue": blue}
     return name, colordict
 
-def gdal2dict(filepath):
+def ctfile2dict(filepath):
     """
-            Creates a color list for a colormap object from a gdal .ct file
+            Creates a color dictionary for a colormap object from a gdal .ct file
 
             Returns
             -------
-            list with a colors from file
+            dictionary with all colors from file
 
             """
 
@@ -124,8 +124,8 @@ def gdal2dict(filepath):
 
     for i in range(len(red)):
         col_list.append((red[i], green[i], blue[i]))
-    colordict = {"red": red, "green": green, "blue": blue}
-    return name, colordict
+    #colordict = {"red": red, "green": green, "blue": blue}
+    return name, col_list
 
 def json2list(filepath):
     """
