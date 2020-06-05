@@ -1,6 +1,6 @@
-<img align="right" src="https://github.com/TUW-GEO/colorella/raw/master/docs/imgs/colorella_logo.png" height="300" width="435">
+<img align="right" src="https://github.com/TUW-GEO/colorella/raw/develop/docs/imgs/colorella_logo.png" height="300" width="435">
 
-# yeoda
+# Colorella
 [![Build Status](https://travis-ci.org/TUW-GEO/colorella.svg?branch=master)](https://travis-ci.org/TUW-GEO/colorella)
 [![Coverage Status](https://coveralls.io/repos/github/TUW-GEO/colorella/badge.svg?branch=master)](https://coveralls.io/github/TUW-GEO/colorella?branch=master)
 [![PyPi Package](https://badge.fury.io/py/colorella.svg)](http://badge.fury.io/py/colorella)
