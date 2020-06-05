@@ -24,8 +24,7 @@ import unittest
 import random
 import matplotlib.pyplot as plt
 import gdal
-from src.colorella.colormap import ColorMap
-from src.colorella.utils import cptfile2dict, ctfile2dict, json2list
+from colorella.colormap import ColorMap
 import matplotlib.colors as col
 
 
@@ -33,9 +32,8 @@ class TestColormap(unittest.TestCase):
 
     def setUp(self):
         """ Create random test data and set up path """
-        #self.data_path = os.path.join(os.path.dirname(__file__), "test_data")
+        self.data_path = os.path.join(os.path.dirname(__file__), "test_data")
         self.output_path = os.path.join(os.path.dirname(__file__), "test_output")
-        self.output_path = r'D:\Colormap'
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path)
 

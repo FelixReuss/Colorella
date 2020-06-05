@@ -42,7 +42,7 @@ import matplotlib.colors as col
 from osgeo import gdal
 import warnings
 
-from src.colorella.utils import cptfile2dict, ctfile2dict, json2list
+from colorella.utils import cptfile2dict, ctfile2dict, json2list
 
 
 class ColorMap:
@@ -183,7 +183,7 @@ class ColorMap:
 
     def save_as_ct(self, outname=None):
         """
-        Saves a acolormap.object as a gdal .ct file
+        Saves a colormap.object as a gdal .ct file
 
         Parameters
         ----------
@@ -433,14 +433,15 @@ class ColorMap:
     @classmethod
     def from_dict(cls, cdict, name='default'):
         """
-           from matplotlib:
-               Create color map from linear mapping segments
-
-               segmentdata argument is a dictionary with a red, green and blue
+        Create color map from linear mapping segments
+        Parameters:
+        ----------
+        cdict: dictionary
+            cdict argument is a dictionary with a red, green and blue
                entries. Each entry should be a list of *x*, *y0*, *y1* tuples,
                forming rows in a table. Entries for alpha are optional.
-
-               Example: suppose you want red to increase from 0 to 1 over
+            example from matplotlib:
+                suppose you want red to increase from 0 to 1 over
                the bottom half, green to do the same over the middle half,
                and blue over the top half.  Then you would use::
 
@@ -469,7 +470,10 @@ class ColorMap:
                    row i+1: x  y0  y1
 
                Hence y0 in the first row and y1 in the last row are never used.
-           """
+        Returns
+        ---------
+        LinearSegmented Colormap object
+        """
         mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cdict)
         return cls(mpl_cm, name=name)
 
