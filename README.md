@@ -8,8 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Description
-*Colorella* stands for **Col**or **or**ganizing ** and **e**asy to **l**earn **la**boratory
-and ptovides a colormap class that  allows usage of colormaps from different sources and provides functions for their efficient application
+*Colorella* stands for **Col**or **or**ganizing and **e**asy to **l**earn **la**boratory
+and provides a colormap class that allows the usage of colormaps from different sources and functions for their efficient application
 
 ## Installation
 
