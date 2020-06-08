@@ -269,7 +269,7 @@ class ColorMap:
             self._mpl_cm = mpl_cm
             return self
         else:
-            return ColorMap(mpl_cm, name=self._mpl_cm.name+'_grey')
+            return ColorMap(mpl_cm)
 
     def show(self):
         """
