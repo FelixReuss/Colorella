@@ -24,6 +24,7 @@ import unittest
 import random
 import matplotlib.pyplot as plt
 import gdal
+import colorcet as cc
 from colorella.colormap import ColorMap
 import matplotlib.colors as col
 
@@ -37,8 +38,11 @@ class TestColormap(unittest.TestCase):
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path)
 
-        cm_list = plt.colormaps()
-        self.default_cm = random.choice(cm_list)
+        cm_mpl_list = plt.colormaps()
+        self.default_mpl_cm = random.choice(cm_mpl_list)
+
+        cm_cc_dict = cc.cm
+        self.default_cc_cm = random.choice(list(cm_cc_dict.keys()))
 
         red = [(0., 1, 1), (1, 0, 0)]
         green = [(0., 1, 1), (1, 0, 0)]
@@ -60,15 +64,28 @@ class TestColormap(unittest.TestCase):
             self.clist.append((random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)))
 
     def tearDown(self):
-        """ Removes all test data. """
-
+        """ Removes all test data """
         shutil.rmtree(self.output_path)
 
-    def test_cmap_from_name(self):
+    def test_ml_cmap_from_name(self):
         """
         Tests creation of a ColorMap from mpl name
         """
-        cmap = ColorMap(self.default_cm)
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+        self.assertIsInstance(cmap, ColorMap)
+
+    def test_cc_cmap_from_name(self):
+        """
+        Tests creation of a ColorMap from a cc name
+        """
+        cmap = ColorMap('cc:{}'.format(self.default_cc_cm))
+        self.assertIsInstance(cmap, ColorMap)
+
+    def test_cl_cmap_from_name(self):
+        """
+        Tests creation of a ColorMap from user colormap directory
+        """
+        cmap = ColorMap('cl:{}'.format('etopo1'))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_dict(self):
@@ -106,7 +123,7 @@ class TestColormap(unittest.TestCase):
         Tests creation of a ColorMap from a json file
         """
         json_file = 'Rainbow.json'
-        cmap = ColorMap.from_json(os.path.join(self.data_path, json_file))
+        cmap = ColorMap.from_jsonfile(os.path.join(self.data_path, json_file))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_listed2segmented(self):
@@ -117,31 +134,49 @@ class TestColormap(unittest.TestCase):
         cmap = cmap.to_gradient()
         self.assertIsInstance(cmap._mpl_cm, col.LinearSegmentedColormap)
 
-    def test_save(self):
+    def test_save_as_cpt(self):
         """
         Tests save ColorMap as cpt file
         """
-        cmap = ColorMap(self.default_cm)
-        cmap.save_as_cpt(self.output_path)
-        cmap_read = ColorMap(self.output_path)
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+        cmap.show()
+        output_path = os.path.join(self.output_path, 'cpt_test.cpt')
+        cmap.save_as_cpt(output_path)
+        cmap_read = ColorMap.from_file(output_path)
+        cmap_read.show()
         self.assertIsInstance(cmap_read, ColorMap)
 
     def test_save_as_ct(self):
         """
         Tests save ColorMap as ct file
         """
-        cmap = ColorMap(self.default_cm)
-        cmap.save_as_ct(self.output_path)
-        cmap_read = ColorMap(self.output_path)
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+        cmap.show()
+        output_path = os.path.join(self.output_path, 'ct_test.ct')
+        cmap.save_as_ct(output_path)
+        cmap_read = ColorMap.from_file(output_path)
+        cmap_read.show()
+        self.assertIsInstance(cmap_read, ColorMap)
+
+    def test_save_as_json(self):
+        """
+        Tests save ColorMap as json file
+        """
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+        cmap.show()
+        output_path = os.path.join(self.output_path, 'json_test.json')
+        cmap.save_as_json(output_path)
+        cmap_read = ColorMap.from_jsonfile(output_path)
+        cmap_read.show()
         self.assertIsInstance(cmap_read, ColorMap)
 
     def test_convert2greyscale(self):
         """
         Tests conversion to a greyscale ColorMap
         """
-        cmap = ColorMap(self.default_cm)
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
         cmap_grey = cmap.convert2greyscale()
-        cmap_grey.view()
+        cmap_grey.show()
         self.assertIsInstance(cmap_grey._mpl_cm, col.LinearSegmentedColormap)
 
     def test_to_matplotlib(self):
@@ -150,7 +185,7 @@ class TestColormap(unittest.TestCase):
         """
         cmap = ColorMap.from_list(self.clist)
         cmap = cmap.to_matplotlib()
-        self.assertIsInstance(cmap._mpl_cm, col.ListedColormap)
+        self.assertIsInstance(cmap, col.ListedColormap)
 
     def test_to_dict(self):
         """
@@ -176,21 +211,20 @@ class TestColormap(unittest.TestCase):
         cmap = ColorMap.from_list(self.clist)
         cmap_reverse = cmap.reverse(inplace=False)
         cmap = cmap_reverse.reverse(inplace=False)
-
         self.assertEqual(cmap._mpl_cm.colors, self.clist)
 
     def test_view(self):
         """
         Tests ploting the ColorMap
         """
-        cmap = ColorMap(self.default_cm)
-        cmap.view()
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+        cmap.show()
 
     def test_to_gdal(self):
         """
         Tests converting the matplotlib ColorMap to a gdal color table
         """
-        cmap = ColorMap(self.default_cm)
+        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
         g_ct = cmap.to_gdal()
         self.assertIsInstance(g_ct, gdal.ColorTable)
 
