@@ -302,7 +302,7 @@ class ColorMap:
                 reverse.append(sorted(data))
 
             revdict = dict(zip(keys, reverse))
-            mpl_cm = mpl.colors.LinearSegmentedColormap(self._mpl_cm, segmentdata=revdict, name=self._mpl_cm.name + '_reversed')
+            mpl_cm = mpl.colors.LinearSegmentedColormap(segmentdata=revdict, name=self._mpl_cm.name + '_reversed')
 
         if inplace:
             self._mpl_cm = mpl_cm
