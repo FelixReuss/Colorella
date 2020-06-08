@@ -2,6 +2,7 @@ import numpy as np
 import colorsys
 import os
 import json
+from copy import deepcopy
 
 
 def cptfile2dict(filepath):
@@ -136,22 +137,22 @@ def json2list(filepath):
            list with all colors from file
 
            """
-
     try:
         with open(filepath, "r") as fidin:
-            name = os.path.splitext(os.path.basename(filepath))[0]
             cmap_dict = json.load(fidin)
             cmap_dict = cmap_dict[0]
+            name = cmap_dict['Name']
+            gradient = False
+            if 'Type' in cmap_dict:
+                if cmap_dict['Type'] == 'Segmented':
+                    gradient = True
+                    colors = cmap_dict['RGBPoints'][0]
+            else:
+                colors = [cmap_dict['RGBPoints'][x:x + 3] for x in range(0, len(cmap_dict['RGBPoints']), 4)]
+            if name is None:
+                name = os.path.splitext(os.path.basename(filepath))[0]
             if cmap_dict.get('RGBPoints', None) is None:
                 return None
-            colormap_type = cmap_dict.get('type', 'segmented')
-            colormap_name = cmap_dict.get('name', os.path.basename(filepath))
-            if colormap_type == 'segmented':
-                col_list = [cmap_dict['RGBPoints'][x:x + 3] for x in range(0, len(cmap_dict['RGBPoints']), 4)]
-            elif colormap_type == 'listed':
-                col_list = [cmap_dict['RGBPoints'][x:x + 3] for x in range(0, len(cmap_dict['RGBPoints']), 4)]
-
     except IOError:
         print("file ", filepath, "not found")
-
-    return name, col_list
+    return name, colors, gradient
