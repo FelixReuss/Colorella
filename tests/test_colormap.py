@@ -23,10 +23,17 @@ import shutil
 import unittest
 import random
 import matplotlib.pyplot as plt
-import gdal
 import colorcet as cc
 from colorella.colormap import ColorMap
 import matplotlib.colors as col
+import warnings
+gdal_warning = 'No GDAL Installation found. Without gdal the following functions are not available: from_gdal, to_gdal'
+try:
+    from osgeo import gdal
+    GDAL_INSTALLED = True
+except:
+    GDAL_INSTALLED = False
+    raise warnings.warn(gdal_warning)
 
 
 class TestColormap(unittest.TestCase):
@@ -85,7 +92,7 @@ class TestColormap(unittest.TestCase):
         """
         Tests creation of a ColorMap from user colormap directory
         """
-        cmap = ColorMap('cl:{}'.format('etopo1'))
+        cmap = ColorMap('cl:{}'.format('Rainbow'))
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_dict(self):
@@ -107,7 +114,7 @@ class TestColormap(unittest.TestCase):
         Tests creation of a ColorMap from a gdal ct file
         """
         ct_file = 'sgrt_ct_cont_ssm.ct'
-        cmap = ColorMap.from_ctfile(os.path.join(self.data_path, ct_file))
+        cmap = ColorMap.from_ctfile(os.path.join(self.data_path, ct_file), gradient=False)
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_cpt(self):
@@ -115,7 +122,7 @@ class TestColormap(unittest.TestCase):
         Tests creation of a ColorMap from a matplotlib ColorMap file
         """
         cpt_file = 'ETOPO1.cpt'
-        cmap = ColorMap.from_cptfile(os.path.join(self.data_path, cpt_file))
+        cmap = ColorMap.from_cptfile(os.path.join(self.data_path, cpt_file), gradient=True)
         self.assertIsInstance(cmap, ColorMap)
 
     def test_cmap_from_json(self):
@@ -142,7 +149,10 @@ class TestColormap(unittest.TestCase):
         cmap.show()
         output_path = os.path.join(self.output_path, 'cpt_test.cpt')
         cmap.save_as_cpt(output_path)
-        cmap_read = ColorMap.from_file(output_path)
+        if isinstance(cmap._mpl_cm, col.LinearSegmentedColormap):
+            cmap_read = ColorMap.from_file(output_path, gradient=True)
+        if isinstance(cmap._mpl_cm, col.ListedColormap):
+            cmap_read = ColorMap.from_file(output_path, gradient=False)
         cmap_read.show()
         self.assertIsInstance(cmap_read, ColorMap)
 
@@ -154,7 +164,10 @@ class TestColormap(unittest.TestCase):
         cmap.show()
         output_path = os.path.join(self.output_path, 'ct_test.ct')
         cmap.save_as_ct(output_path)
-        cmap_read = ColorMap.from_file(output_path)
+        if isinstance(cmap._mpl_cm, col.LinearSegmentedColormap):
+            cmap_read = ColorMap.from_file(output_path, gradient=True)
+        if isinstance(cmap._mpl_cm, col.ListedColormap):
+            cmap_read = ColorMap.from_file(output_path, gradient=False)
         cmap_read.show()
         self.assertIsInstance(cmap_read, ColorMap)
 
@@ -224,9 +237,10 @@ class TestColormap(unittest.TestCase):
         """
         Tests converting the matplotlib ColorMap to a gdal color table
         """
-        cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
-        g_ct = cmap.to_gdal()
-        self.assertIsInstance(g_ct, gdal.ColorTable)
+        if GDAL_INSTALLED:
+            cmap = ColorMap('mpl:{}'.format(self.default_mpl_cm))
+            g_ct = cmap.to_gdal()
+            self.assertIsInstance(g_ct, gdal.ColorTable)
 
 
 if __name__ == '__main__':
