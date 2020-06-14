@@ -42,7 +42,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as col
 import colorcet as cc
 import warnings
-from colorella.conversions import cptfile2dict, ctfile2list, json2list
+from src.colorella.conversions import cptfile2dict, ctfile2list, json2list
 
 gdal_warning = 'No GDAL Installation found. Without gdal the following functions are not available: from_gdal, to_gdal'
 try:
@@ -80,9 +80,9 @@ class ColorMap:
                 cm_filepath = os.path.join(os.path.dirname(__file__), "colormaps", cm_name + ".json")
                 name, colors, gradient = json2list(cm_filepath)
                 if gradient == False:
-                    self._mpl_cm = self.from_list(clist=colors, gradient=gradient, name=name)
+                    self._mpl_cm = col.ListedColormap(colors=colors, name=name)
                 if gradient == True:
-                    self._mpl_cm = self.from_dict(cdict=colors, name=name)
+                    self._mpl_cm = col.LinearSegmentedColormap(segmentdata=colors, name=name)
             elif pkg_name == 'cc':
                 if cm_name not in cc.cm:
                     raise ValueError('Input provided {0} is not a Colorcet Colormap'.format(
@@ -135,7 +135,7 @@ class ColorMap:
             if gradient == True:
                 mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cpt_dict)
         elif '.ct' == extension:
-            filename, gdal_list = ctfile2dict(filepath)
+            filename, gdal_list = ctfile2list(filepath)
             name = name if name is not None else filename
             if gradient == False:
                 mpl_cm = col.ListedColormap(name=name, colors=gdal_list)
@@ -188,7 +188,7 @@ class ColorMap:
         -------
         ColorMap object (Listed Colormap object)
         """
-        name, gdal_list = ctfile2dict(filepath)
+        name, gdal_list = ctfile2list(filepath)
         if gradient == False:
             return cls.from_list(gdal_list, name=name, gradient=False)
         if gradient == True:
