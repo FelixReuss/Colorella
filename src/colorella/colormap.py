@@ -42,7 +42,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as col
 import colorcet as cc
 import warnings
-from src.colorella.conversions import cptfile2dict, ctfile2list, json2list
+from colorella.conversions import cptfile2dict, ctfile2list, json2list
 
 gdal_warning = 'No GDAL Installation found. Without gdal the following functions are not available: from_gdal, to_gdal'
 try:
