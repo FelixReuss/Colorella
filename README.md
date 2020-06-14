@@ -9,9 +9,15 @@
 
 ## Description
 *Colorella* stands for **Col**or **or**ganizing and **e**asy to **l**earn **la**boratory
-and provides a colormap class that allows the usage of colormaps from different sources and functions for their efficient application
+and provides a colormap class that allows the usage of colormaps from different sources and functions for their efficient application. Currently the import from Colormaps from Matplotlib, Colorcet and .cpt, .ct and .json files is supported. Functionality includes showing, reversering, converting colormaps to greyscale, converting and importing to and from Gdal colortables as well as saving colormaps to various formats (.cpt, .ct, .json). For a complete documentation please read the documentation.
 
 ## Installation
+Installing the package and creating an environment with conda can be performed using the following commands:
+
+git clone git@github.com:TUW-GEO/colorella.git colorella
+cd colorella
+conda env create -f environment.yml
+source activate colorella
 
 ## Citation
 If you use the software in a publication then please cite it using the Zenodo DOI.
