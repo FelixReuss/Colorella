@@ -79,9 +79,9 @@ class ColorMap:
             elif pkg_name == "cl":
                 cm_filepath = os.path.join(os.path.dirname(__file__), "colormaps", cm_name + ".json")
                 name, colors, gradient = json2list(cm_filepath)
-                if gradient == False:
+                if not gradient:
                     self._mpl_cm = col.ListedColormap(colors=colors, name=name)
-                if gradient == True:
+                else:
                     self._mpl_cm = col.LinearSegmentedColormap(segmentdata=colors, name=name)
             elif pkg_name == 'cc':
                 if cm_name not in cc.cm:
@@ -130,23 +130,23 @@ class ColorMap:
         if '.cpt' == extension:
             filename, cpt_list, cpt_dict = cptfile2dict(filepath)
             name = name if name is not None else filename
-            if gradient == False:
+            if not gradient:
                 mpl_cm = col.ListedColormap(name=name, colors=cpt_list)
-            if gradient == True:
+            else:
                 mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=cpt_dict)
         elif '.ct' == extension:
             filename, gdal_list = ctfile2list(filepath)
             name = name if name is not None else filename
-            if gradient == False:
+            if not gradient:
                 mpl_cm = col.ListedColormap(name=name, colors=gdal_list)
-            if gradient == True:
+            else:
                 mpl_cm = col.LinearSegmentedColormap.from_list(name=name, colors=gdal_list)
         elif '.json' == extension:
             filename, colors, gradient = json2list(filepath)
             name = name if name is not None else filename
-            if gradient == False:
+            if not gradient:
                 mpl_cm = col.ListedColormap(colors,  name=name)
-            if gradient == True:
+            else:
                 mpl_cm = col.LinearSegmentedColormap(name=name, segmentdata=colors)
 
         else:
@@ -169,10 +169,11 @@ class ColorMap:
         ColorMap object (LinearSegmented Colormap object)
         """
         name, cpt_list, cpt_dict = cptfile2dict(filepath)
-        if gradient == False:
+        if not gradient:
             return cls.from_list(cpt_list, name=name, gradient=False)
-        if gradient == True:
+        else:
             return cls.from_dict(cpt_dict, name=name)
+
 
     @classmethod
     def from_ctfile(cls, filepath, gradient=True):
@@ -189,10 +190,11 @@ class ColorMap:
         ColorMap object (Listed Colormap object)
         """
         name, gdal_list = ctfile2list(filepath)
-        if gradient == False:
+        if not gradient:
             return cls.from_list(gdal_list, name=name, gradient=False)
-        if gradient == True:
+        else:
             return cls.from_list(gdal_list, name=name, gradient=True)
+
 
     @classmethod
     def from_jsonfile(cls, filepath):
@@ -209,10 +211,11 @@ class ColorMap:
         ColorMap object (LinearSegmented or Listed Colormap object)
         """
         name, colors, gradient = json2list(filepath)
-        if gradient == False:
+        if not gradient:
             return cls.from_list(colors, name=name, gradient=gradient)
-        if gradient == True:
+        else:
             return cls.from_dict(colors, name=name)
+
 
     @classmethod
     def from_gdal(cls, ct):

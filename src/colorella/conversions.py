@@ -34,9 +34,7 @@ def cptfile2dict(filepath):
                 if l[0] == "#":
                     if ls[-1] == "HSV":
                         color_model = "HSV"
-                        continue
-                    else:
-                        continue
+                    continue
                 if ls[0] == "B" or ls[0] == "F" or ls[0] == "N":
                     pass
                 else:
@@ -177,7 +175,6 @@ def json2list(filepath):
             return name, colors, gradient
     else:
         raise ImportError("file ", filepath, "not found")
-        return None
 
 def add_alpha(colors):
     """
