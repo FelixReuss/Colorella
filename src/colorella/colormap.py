@@ -50,7 +50,7 @@ try:
     GDAL_INSTALLED = True
 except:
     GDAL_INSTALLED = False
-    raise warnings.warn(gdal_warning)
+    warnings.warn(gdal_warning)
 
 class ColorMap:
     """create a colormap object compatible with matplotlib
@@ -237,7 +237,7 @@ class ColorMap:
                         ct.GetColorEntry[x][0] / 255.0] for x in ct.GetCount()]
             return cls.from_list(mpl_arr)
         else:
-            raise warnings.warn(gdal_warning)
+            warnings.warn(gdal_warning)
             return None
 
     @classmethod
@@ -519,7 +519,7 @@ class ColorMap:
                     gdal_ct.SetColorEntry(i, tuple((255, 255, 255)) + (0,))
             return gdal_ct
         else:
-            raise warnings.warn(gdal_warning)
+            warnings.warn(gdal_warning)
             return None
 
     def save_as_cpt(self, outpath=None, **kwargs):
