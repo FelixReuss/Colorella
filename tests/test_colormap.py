@@ -27,13 +27,12 @@ import colorcet as cc
 from colorella.colormap import ColorMap
 import matplotlib.colors as col
 import warnings
-gdal_warning = 'No GDAL Installation found. Without gdal the following functions are not available: from_gdal, to_gdal'
+
 try:
     from osgeo import gdal
     GDAL_INSTALLED = True
 except:
     GDAL_INSTALLED = False
-    raise warnings.warn(gdal_warning)
 
 
 class TestColormap(unittest.TestCase):
