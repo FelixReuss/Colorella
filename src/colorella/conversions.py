@@ -86,7 +86,6 @@ def cptfile2dict(filepath):
         return name, col_list, color_dict
     else:
         raise ImportError("file ", filepath, "not found")
-        return None
 
 
 def ctfile2list(filepath):
@@ -136,7 +135,6 @@ def ctfile2list(filepath):
 
     else:
         raise ImportError("file ", filepath, "not found")
-        return None
 
 def json2list(filepath):
     """

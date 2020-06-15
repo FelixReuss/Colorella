@@ -50,7 +50,6 @@ try:
     GDAL_INSTALLED = True
 except:
     GDAL_INSTALLED = False
-    warnings.warn(gdal_warning)
 
 class ColorMap:
     """create a colormap object compatible with matplotlib
