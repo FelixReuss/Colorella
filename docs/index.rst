@@ -10,7 +10,7 @@ Welcome to colorella's documentation!
    :maxdepth: 2
    :caption: Contents:
    
-.. automodule:: src.colorella.colormap
+.. automodule:: colorella.colormap
 
 .. autoclass:: ColorMap
 	:members:
