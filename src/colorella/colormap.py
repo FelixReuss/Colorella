@@ -156,7 +156,7 @@ class ColorMap:
     @classmethod
     def from_cptfile(cls, filepath, gradient=True):
         """
-        Create a LinearSegmented Colormap from a MatplotLib .ct file
+        Create a LinearSegmented Colormap from a .cpt file
 
         Parameters
         ----------
@@ -505,7 +505,7 @@ class ColorMap:
             if isinstance(self._mpl_cm, col.ListedColormap):
                 mpl_ct = self._mpl_cm.colors
 
-                for i in range(0, mpl_ct.shape[0], accelerate):
+                for i in range(0, len(mpl_ct), accelerate):
                     gdal_ct.SetColorEntry(int(i / accelerate), tuple(np.rint(np.multiply(mpl_ct[i], 256)).astype(np.byte)) + (0,))
                 for i in range(256 // accelerate, 256):
                     gdal_ct.SetColorEntry(i, tuple((255, 255, 255)) + (0,))
