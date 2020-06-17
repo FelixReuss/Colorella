@@ -12,9 +12,13 @@
 and provides a colormap class that allows the usage of colormaps from different sources and functions for their efficient application. Currently the import from Colormaps from Matplotlib, Colorcet and .cpt, .ct and .json files is supported. Functionality includes showing, reversering, converting colormaps to greyscale, converting and importing to and from Gdal colortables as well as saving colormaps to various formats (.cpt, .ct, .json). For a complete documentation please read the documentation or have a look at the examples in /examples.
 
 ## Installation
-Installing the package and creating an environment with conda can be performed using the following commands:
+To install the lastest release of colorella in your own environment, use:
 
-git clone git@github.com:TUW-GEO/colorella.git colorella
+pip install colorella
+
+Installing a specific branch and creating an environment with conda can also be performed using the following commands:
+
+git clone git@github.com:TUW-GEO/colorella.git@branch colorella
 
 cd colorella
 
