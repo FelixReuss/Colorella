@@ -62,7 +62,10 @@ class ColorMap:
         Parameters
         ----------
         arg : str
-            defining the input for the colormap, can be one of the following: mpl:Name to load a matplotlib colormap, cc:Name to load a Colorcet colormap, clName to load a Colorella Colormap from json file
+            defining the input for the colormap, can be one of the following:
+                mpl:Name to load a matplotlib colormap,
+                cc:Name to load a Colorcet colormap,
+                cl:Name to load a Colorella Colormap from json file
         """
         self.arg = arg
 
